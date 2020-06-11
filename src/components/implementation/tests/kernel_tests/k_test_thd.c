@@ -145,7 +145,7 @@ test_thds_tls(void)
         thdcap_t ts[TEST_NTHDS];
         intptr_t i;
         int      ret;
-
+	double   pi;
         for (i = 0; i < TEST_NTHDS; i++) {
                 ts[i] = cos_thd_alloc(&booter_info, booter_info.comp_cap, thd_tls, (void *)i);
                 if (EXPECT_LL_LT(1, ts[i], "Thread TLS: Cannot Allocate")) {
