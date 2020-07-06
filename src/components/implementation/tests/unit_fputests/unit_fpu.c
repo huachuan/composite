@@ -14,7 +14,6 @@
 static int thd1_reg[NUM_CPU] = { 0 };
 static int thd2_fpu[NUM_CPU] = { 0 };
 static int thd3_fpu[NUM_CPU] = { 0 };
-static int thd4_reg[NUM_CPU] = { 0 };
 
 static void
 reg_thd_fn()
@@ -22,20 +21,14 @@ reg_thd_fn()
 	thd1_reg[cos_cpuid()] = 1;
 	while (1);
 }
-static void
-reg2_thd_fn()
-{
-	thd4_reg[cos_cpuid()] = 1;
-	float m = 0.1;
-	while (m < 1000000) {m += 0.1;};
-}
+
 static void
 pi_thd_fn()
 {
 	thd2_fpu[cos_cpuid()] = 1;
 	float    PI = 3.0;
 	int      flag = 1, i;
-	for (i = 2; i < 10000; i += 2) {	
+	for (i = 2; i < 100000; i += 2) {	
 		if (flag) {
 			PI += (4.0 / (i * (i + 1) * (i + 2)));
 		} else {
@@ -43,7 +36,7 @@ pi_thd_fn()
 		}
 		flag = !flag;
 	}
-        //PRINTC("\tpi = %f: \t\t\tFinish calculate Pi\n", PI);
+        /*PRINTC("\tpi = %f: \t\t\tFinish calculate Pi\n", PI);*/
 	sl_thd_exit();
 }
 
@@ -53,17 +46,17 @@ euler_thd_fn()
 	thd3_fpu[cos_cpuid()] = 1;
 	float    E = 1.0, fact = 1.0;
 	int    i;
-	for (i = 1; i < 10000; i++) {	
+	for (i = 1; i < 1000; i++) {	
 		fact *= i;
 		E += (1.0 / fact);
 	}
-        //PRINTC("\te = %f: \t\t\tFinish calculate E\n", E);
+        /*PRINTC("\te = %f: \t\t\tFinish calculate E\n", E);*/
 	sl_thd_exit();
 }
 static void
-allocator_thread_fn()
+allocator_ffthread_fn()
 {
-	struct sl_thd *thd1, *thd2, *thd3;
+	struct sl_thd *thd1, *thd2;
 	cycles_t wakeup;
 
 	thd1 = sl_thd_alloc(pi_thd_fn, NULL);
@@ -82,12 +75,35 @@ allocator_thread_fn()
 }
 
 static void
-test_swapping(void)
+allocator_frthread_fn()
+{
+	struct sl_thd *thd1, *thd2;
+	cycles_t wakeup;
+
+	thd1 = sl_thd_alloc(reg_thd_fn, NULL);
+	sl_thd_param_set(thd1, sched_param_pack(SCHEDP_PRIO, FIXED_PRIORITY));
+
+	thd2 = sl_thd_alloc(pi_thd_fn, NULL);
+	sl_thd_param_set(thd2, sched_param_pack(SCHEDP_PRIO, FIXED_PRIORITY));
+
+	wakeup = sl_now() + sl_usec2cyc(1000 * 1000);
+	sl_thd_block_timeout(0, wakeup);
+
+	sl_thd_free(thd1);
+	sl_thd_free(thd2);
+
+	sl_thd_exit();
+}
+static void
+test_swapping(int d)
 {
 	struct sl_thd *allocator_thread;
 	cycles_t wakeup;
-
-	allocator_thread = sl_thd_alloc(allocator_thread_fn, NULL);
+	if (d == 0) {
+		allocator_thread = sl_thd_alloc(allocator_ffthread_fn, NULL);
+	} else if (d == 1) {
+		allocator_thread = sl_thd_alloc(allocator_frthread_fn, NULL);
+	}
 	sl_thd_param_set(allocator_thread, sched_param_pack(SCHEDP_PRIO, FIXED_PRIORITY));
 
 	wakeup = sl_now() + sl_usec2cyc(100 * 1000);
@@ -99,8 +115,10 @@ test_swapping(void)
 static void
 run_tests()
 {
-	test_swapping();
-	PRINTC("%s: Swap back and forth!\n", (thd2_fpu[cos_cpuid()] && thd3_fpu[cos_cpuid()]) ? "SUCCESS" : "FAILURE");
+	test_swapping(0);
+	PRINTC("%s: Swap back and forth between fpu and fpu thread!\n", (thd2_fpu[cos_cpuid()] && thd3_fpu[cos_cpuid()]) ? "SUCCESS" : "FAILURE");
+	test_swapping(1);
+	PRINTC("%s: Swap back and forth between fpu and reg thread!\n", (thd1_reg[cos_cpuid()] && thd2_fpu[cos_cpuid()]) ? "SUCCESS" : "FAILURE");
 	PRINTC("Unit-test done!\n");
 	sl_thd_exit();
 }

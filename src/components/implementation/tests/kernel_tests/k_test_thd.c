@@ -3,8 +3,6 @@
 
 static int          		failure = 0;
 static thdcap_t     		thds[4];
-static unsigned long long	start, end, diff_ff, diff_fr;
-static int 			itr_ff = 0, itr_fr = 0;
 /*
  * Fundamental check & test
  * checks thd creation, arg passing and basic swich
@@ -168,8 +166,8 @@ static void
 thds_fpu(void *d)
 {
 	float    PI = 3.0;
-	int      flag = 1, i;
-	PRINTC("\tstart calculating pi in thd %u: \t\t\tStart\n", (int)d);
+	int      flag = 1;
+	int	 i;
 	for (i = 2; i < 20; i += 2) {	
 		if (flag) {
 			PI += (4.0 / (i * (i + 1) * (i + 2)));
@@ -177,28 +175,25 @@ thds_fpu(void *d)
 			PI -= (4.0 / (i * (i + 1) * (i + 2)));
 		}
 		if ((int) d == 1) {
-			PRINTC("\t%s: \t\t\tSuccess\n", "switch from thd1 to thd 2");
                		cos_thd_switch(thds[2]);
 		} else if ((int) d == 2) {
-			PRINTC("\t%s: \t\t\tSuccess\n", "switch from thd2 to thd 1");
 		 	cos_thd_switch(thds[1]);		
 		} else if ((int) d == 3) {
-			PRINTC("\t%s: \t\t\tSuccess\n", "switch from thd3 to thd 0");
 		 	cos_thd_switch(thds[0]);		
 		}
 		flag = !flag;
 	}
-        PRINTC("\tpi = %f: \t\t\tFinish calculate Pi and switch to main thread\n", PI);
+	if ((int)PI != 3) PRINTC("\t%s: \t\t\tPI = %f ERROR\n", "PI VALUE", PI);
+        /*PRINTC("\t%s: \t\t\tPI = %f Success\n", "THD => FPU", PI);*/
         cos_thd_switch(BOOT_CAPTBL_SELF_INITTHD_CPU_BASE);
 	return;
 }
 
 static void
-test_thds_no_fpu(void *d)
+test_thds_reg(void *d)
 {
         int ret = 0;
         while (1) {
-		PRINTC("\t%s: \t\t\tSuccess\n", "switch from thd0 to thd 3");
 		cos_thd_switch(thds[3]);
 	}
         PRINTC("Error, shouldn't get here!\n");
@@ -208,23 +203,20 @@ test_thds_fpu(void)
 {
         intptr_t i = 0;
         int      ret;
-	thds[0] = cos_thd_alloc(&booter_info, booter_info.comp_cap, test_thds_no_fpu, (void *)i);
-        PRINTC("\tAllocate thread %u \t\tSuccess\n", i);
+	thds[0] = cos_thd_alloc(&booter_info, booter_info.comp_cap, test_thds_reg, (void *)i);
 	
 	for (i = 1; i <= 3; i++) {
 		thds[i] = cos_thd_alloc(&booter_info, booter_info.comp_cap, thds_fpu, (void *)i);
                 if (EXPECT_LL_LT(1, thds[i], "Thread FPU: Cannot Allocate")) {
                         return;
                 }
-		PRINTC("\tAllocate thread %u \t\tSuccess\n", i);
         }
 	for (i = 0; i < 3; i++) {
-		PRINTC("\tswtich to thread %u: \t\t Success\n", i);
 		ret = cos_thd_switch(thds[i]);
                 if (EXPECT_LL_NEQ(0, ret, "Thread TLS: COS Switch Error")) return;
         }
 	CHECK_STATUS_FLAG();
-        PRINTC("\t%s: \t\tSuccess\n", "THD => Switch fpu");
+        PRINTC("\t%s: \t\t\tSuccess\n", "THD => FPU Thread Switch");
         EXIT_FN();
 }
 void
