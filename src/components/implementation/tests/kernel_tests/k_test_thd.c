@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include "kernel_tests.h"
 
-static int          		failure = 0;
-static thdcap_t     		thds[4];
+static int                      failure = 0;
+static thdcap_t                 thds[4];
 /*
  * Fundamental check & test
  * checks thd creation, arg passing and basic swich
@@ -12,7 +12,7 @@ static void
 test_thd_arg(void *d)
 {
         int ret = 0;
-	
+
         if (EXPECT_LL_NEQ((int)d, THD_ARG, "Thread Creation: Argument Incorrect")) failure = 1;
         while (1) cos_thd_switch(BOOT_CAPTBL_SELF_INITTHD_CPU_BASE);
         PRINTC("Error, shouldn't get here!\n");
@@ -105,7 +105,6 @@ thd_fn_mthds_classic(void *d)
  * The thds will switch between the main thd and it each individual thd back and forth.
  * testing if it switched to the desirable thd at each iteration
  */
-
 
 static void
 test_mthds_classic(void)
@@ -226,6 +225,6 @@ test_thds(void)
         test_thds_tls();
         test_mthds_classic();
         test_mthds_ring();
-	test_thds_fpu();
+        test_thds_fpu();
 }
 

@@ -39,12 +39,14 @@ static inline int           fpu_get_info(void);
 static inline int           fpu_check_fxsr(void);
 static inline int           fpu_check_sse(void);
 #include "thd.h"
+
 static inline int
 fpu_init(void)
 {
 	fpu_set(FPU_DISABLE);
 	*PERCPU_GET(fpu_disabled)  = 1;
 	*PERCPU_GET(fpu_last_used) = NULL;
+
 #if FPU_SUPPORT_FXSR > 0
 	int fxsr = fpu_check_fxsr();
 	int fsse = fpu_check_sse();
@@ -251,7 +253,6 @@ fxrstor(struct thread *thd)
 #endif
 	return;
 }
-
 #else
 /* if FPU_DISABLED is not defined, then we use these dummy functions */
 static inline int

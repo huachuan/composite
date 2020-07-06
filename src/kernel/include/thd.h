@@ -572,7 +572,7 @@ thd_switch_update(struct thread *thd, struct pt_regs *regs, int issame)
 	if (issame && preempt == 0) {
 		__userregs_set(regs, 0, __userregs_getsp(regs), __userregs_getip(regs));
 	}
-        /*printk("in thd swtich update preempt = %d\n",preempt);*/
+
 	return preempt;
 }
 
@@ -588,4 +588,5 @@ thd_introspect(struct thread *t, unsigned long op, unsigned long *retval)
 	}
 	return 0;
 }
+
 #endif /* THD_H */

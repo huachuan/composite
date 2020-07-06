@@ -163,7 +163,6 @@ kmain(struct multiboot *mboot, u32_t mboot_magic, u32_t esp)
 	comp_init();
 	thd_init();
 	fpu_init();
-
 	paging_init();
 
 	kern_boot_comp(INIT_CORE);

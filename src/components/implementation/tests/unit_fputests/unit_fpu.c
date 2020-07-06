@@ -111,7 +111,6 @@ test_swapping(int d)
 	sl_thd_free(allocator_thread);
 }
 
-
 static void
 run_tests()
 {
